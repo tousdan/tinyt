@@ -9,7 +9,7 @@ var FILE_NAME = "game";
 var LIBRARY_NAME = PACKAGE.name;
 
 var PATHS = {
-  entryPoint: path.resolve(__dirname, 'src/index.ts'),
+  entryPoint: path.resolve(__dirname, 'src/web/index.ts'),
   dist: path.resolve(__dirname, 'dist/lib')
 }
 
