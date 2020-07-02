@@ -20,16 +20,17 @@ const resourceTypeToString = (resource: ResourceType) : string => {
 
 const resourceTypeToColor = (resource: ResourceType) : number => {
     switch(resource) {
-        case ResourceType.Brick: return 0xFF0000;
-        case ResourceType.Glass: return 0x0000FF;
-        case ResourceType.Stone: return 0x00AAAA;
-        case ResourceType.Wheat: return 0xAAAAAA;
-        case ResourceType.Wood: return  0xC0FF33;
+        case ResourceType.Brick: return 0xFF4C1b;
+        case ResourceType.Glass: return 0x2C95AB;
+        case ResourceType.Stone: return 0xD8B790;
+        case ResourceType.Wheat: return 0xFFBE00;
+        case ResourceType.Wood: return  0xA24C2C;
         default: 0xFFFFFF;
     }
 }
 
-
+const CELL_HIGHLIGHT_BORDER_PADDING_PX = 4;
+const CELL_HIGHLIGHT_BORDER_THICKNESS_PX = 4;
 const CELL_SIZE_PX = 64;
 
 export class Resource implements ICellContent {
@@ -67,14 +68,49 @@ export class Cell {
     private init: boolean = false;
     private content: ICellContent
     private newContent: boolean = false;
+    private hovered: boolean = false;
+    private highlightCellSprite: Graphics;
 
     constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
 
         this.sprite = new Graphics();
+
+        this.sprite.interactive = true;
+        this.sprite.on('pointerover', this.onPointerOver, this);
+        this.sprite.on('pointerout', this.onPointerOut, this);
     }
 
+    onPointerOver() {
+        console.log(this.x, this.y);
+        if (!this.content && !this.hovered) {
+            const sprite = new Graphics();
+            
+            //TODO: replace with a 50% alpha of the content that would be added if clicked.
+            sprite.beginFill(0xFFFFFF);
+            sprite.drawRect(CELL_HIGHLIGHT_BORDER_PADDING_PX, CELL_HIGHLIGHT_BORDER_PADDING_PX, CELL_HIGHLIGHT_BORDER_THICKNESS_PX, CELL_SIZE_PX - CELL_HIGHLIGHT_BORDER_PADDING_PX * 2)
+            sprite.drawRect(CELL_HIGHLIGHT_BORDER_PADDING_PX, CELL_HIGHLIGHT_BORDER_PADDING_PX, CELL_SIZE_PX - CELL_HIGHLIGHT_BORDER_PADDING_PX * 2, CELL_HIGHLIGHT_BORDER_THICKNESS_PX)
+            sprite.drawRect(CELL_SIZE_PX - CELL_HIGHLIGHT_BORDER_THICKNESS_PX - CELL_HIGHLIGHT_BORDER_PADDING_PX, CELL_HIGHLIGHT_BORDER_PADDING_PX, CELL_HIGHLIGHT_BORDER_THICKNESS_PX, CELL_SIZE_PX - CELL_HIGHLIGHT_BORDER_PADDING_PX * 2)
+            sprite.drawRect(CELL_HIGHLIGHT_BORDER_PADDING_PX, CELL_SIZE_PX - CELL_HIGHLIGHT_BORDER_THICKNESS_PX - CELL_HIGHLIGHT_BORDER_PADDING_PX, CELL_SIZE_PX - CELL_HIGHLIGHT_BORDER_PADDING_PX * 2, CELL_HIGHLIGHT_BORDER_THICKNESS_PX);
+            sprite.endFill();
+
+            this.sprite.addChild(sprite);
+
+            this.highlightCellSprite = sprite;
+        }
+
+        this.hovered = true;
+    }
+
+    onPointerOut() {
+        if (this.highlightCellSprite) {
+            this.sprite.removeChild(this.highlightCellSprite);
+        }
+
+        this.hovered = false;
+    }
+    
     setContent(content: ICellContent) {
         this.content = content;
         this.newContent = true;
@@ -93,11 +129,15 @@ export class Cell {
             this.sprite.drawRect(0, 0, CELL_SIZE_PX, CELL_SIZE_PX);
             this.sprite.endFill();
 
+            this.sprite.beginFill(0xFFFFFF);
+            this.sprite.drawRect(0,0,2,2);
+            this.sprite.endFill();
+
             if (this.content) {
                 const cellContainer = this.content.render();
                 this.sprite.addChild(cellContainer);
-                cellContainer.x = this.sprite.width - cellContainer.width;
-                cellContainer.y = this.sprite.height - cellContainer.height;
+                cellContainer.x = (this.sprite.width - cellContainer.width)/2;
+                cellContainer.y = (this.sprite.height - cellContainer.height)/2;
             }
             
             this.init = true;
@@ -143,7 +183,8 @@ export class Board {
         const boardSize = this.cells.length;
 
         if (!this.init) {
-            const size = (this.cells.length) * CELL_SIZE_PX + (BOARD_BORDER_SIZE_PX * 2);
+            this.init = true;
+            const size = this.cells.length * CELL_SIZE_PX + (BOARD_BORDER_SIZE_PX * 2);
 
             this.sprite.width = size;
             this.sprite.height = size;
