@@ -1,4 +1,4 @@
-import { Board } from './board';
+import { Board } from './game/board';
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 
 export class Player {
@@ -29,7 +29,7 @@ export class Player {
             boardSprite.y = 0;
 
             const name = new Text(this.name, new TextStyle({
-                fill: 'white'
+                fill: 'black'
             }));
 
             this.sprite.addChild(name);
