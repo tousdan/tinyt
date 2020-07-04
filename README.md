@@ -1,2 +1,2 @@
 # tinyt
-an online multiplayer board game in the browser
+(learning to build) an online multiplayer board game in the browser
