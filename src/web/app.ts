@@ -1,6 +1,7 @@
 import Intro from './intro/intro';
 import GameState from './gamestate';
 import Game from './game/game';
+import Context from './context';
 
 enum Stage {
     Intro,
@@ -33,6 +34,8 @@ class Application {
         this.introScreen = new Intro(this.state);
 
         this.app.stage.addChild(this.introScreen.sprite);
+
+        Context.state = this.state;
     }
 
     startGame() {

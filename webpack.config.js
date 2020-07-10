@@ -41,7 +41,7 @@ module.exports = {
     minimize: true,
     minimizer: [new UglifyJsPlugin({
       include: /\.min\.js$/
-    })]
+    })],
   },
   resolve: {
     extensions: [ '.tsx', '.ts', '.js' ],

@@ -1,4 +1,6 @@
-import { Graphics, Container } from 'pixi.js';
+import { Graphics, Container, Sprite } from 'pixi.js';
+import Context from '../context';
+import PickResourceAction from '../actions/pickresource';
 
 export interface ICellContent {
     toChar(): string
@@ -49,15 +51,19 @@ export class Resource implements ICellContent {
 
     render(): Container {
         if (!this.init) {
-            this.sprite.beginFill(resourceTypeToColor(this.resource), 1);
-            this.sprite.drawRect(0, 0, CELL_SIZE_PX/2, CELL_SIZE_PX/2);
-            this.sprite.endFill();
-
+            fillResourceType(this.sprite, 0, 0, CELL_SIZE_PX/2, CELL_SIZE_PX/2, this.resource);
+            
             this.init = true;
         }
 
         return this.sprite;
     }
+}
+
+function fillResourceType(sprite: Graphics, x:number, y: number, w: number, h: number, resource: ResourceType) {
+    sprite.beginFill(resourceTypeToColor(resource), 1);
+    sprite.drawRect(x, y, w, h);
+    sprite.endFill();
 }
 
 export class Cell {
@@ -70,21 +76,26 @@ export class Cell {
     private newContent: boolean = false;
     private hovered: boolean = false;
     private highlightCellSprite: Graphics;
+    private board: Board;
 
-    constructor(x: number, y: number) {
+    constructor(board: Board, x: number, y: number) {
         this.x = x;
         this.y = y;
+
+        this.board = board;
 
         this.sprite = new Graphics();
 
         this.sprite.interactive = true;
         this.sprite.on('pointerover', this.onPointerOver, this);
         this.sprite.on('pointerout', this.onPointerOut, this);
+        this.sprite.on('click', this.onClick, this);
     }
 
     onPointerOver() {
-        console.log(this.x, this.y);
-        if (!this.content && !this.hovered) {
+        const {lastAction} = Context.state;
+        if (!this.content && !this.hovered && lastAction instanceof PickResourceAction) {
+            const {resource} = lastAction;
             const sprite = new Graphics();
             
             //TODO: replace with a 50% alpha of the content that would be added if clicked.
@@ -95,12 +106,16 @@ export class Cell {
             sprite.drawRect(CELL_HIGHLIGHT_BORDER_PADDING_PX, CELL_SIZE_PX - CELL_HIGHLIGHT_BORDER_THICKNESS_PX - CELL_HIGHLIGHT_BORDER_PADDING_PX, CELL_SIZE_PX - CELL_HIGHLIGHT_BORDER_PADDING_PX * 2, CELL_HIGHLIGHT_BORDER_THICKNESS_PX);
             sprite.endFill();
 
+            //TODO: Right size here not 5.
+            //fillResourceType(sprite, CELL_HIGHLIGHT_BORDER_PADDING_PX * 2, CELL_HIGHLIGHT_BORDER_PADDING_PX * 2, 5, 5, resource);
+
             this.sprite.addChild(sprite);
 
             this.highlightCellSprite = sprite;
+            
+            this.hovered = true;
         }
 
-        this.hovered = true;
     }
 
     onPointerOut() {
@@ -110,10 +125,21 @@ export class Cell {
 
         this.hovered = false;
     }
+
+    onClick() {
+        if (this.highlightCellSprite) {
+            const {lastAction} = Context.state;
+            if (lastAction instanceof PickResourceAction && this.board.playResource(this.x, this.y, lastAction.resource)) {
+                this.sprite.removeChild(this.highlightCellSprite);
+                this.highlightCellSprite = null;
+            }
+        }
+    }
     
     setContent(content: ICellContent) {
         this.content = content;
         this.newContent = true;
+        this.render();
     }
 
     getContent(): ICellContent {
@@ -164,12 +190,12 @@ export class Board {
             this.cells[x] = row;
 
             for (let y: number = 0; y<boardSize; y++) {
-                row[y] = new Cell(x, y);
+                row[y] = new Cell(this, x, y);
             }
         }
     }
 
-    playResource(x: number, y: number, resource: ResourceType) {
+    playResource(x: number, y: number, resource: ResourceType): boolean {
         const cell = this.getCell(x, y);
 
         if (cell.getContent()) {
@@ -177,6 +203,8 @@ export class Board {
         }
 
         cell.setContent(new Resource(resource));
+
+        return true;
     }
 
     render() {
@@ -215,11 +243,11 @@ export class Board {
             return;
         }
 
-        /*for(let x = 0; x < boardSize; x++) {    
+        for(let x = 0; x < boardSize; x++) {    
             for(let y = 0; y < boardSize; y++) {
                 this.getCell(x, y).render();
             }
-        }*/
+        }
     }
 
     private getCell(x: number, y: number) {
